@@ -141,10 +141,14 @@
 
       setTimeout(() => {
 
-        firstHighlight.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
+        const target =
+  firstHighlight.closest("h1,h2,h3,h4,h5,h6") ||
+  firstHighlight;
+
+target.scrollIntoView({
+  behavior: "smooth",
+  block: "start"
+});
 
       }, 150);
 
