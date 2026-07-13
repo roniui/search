@@ -6,7 +6,6 @@
   }
 
   window.addEventListener("load", () => {
-
     const params = new URLSearchParams(window.location.search);
     const query = params.get("highlight");
 
@@ -30,20 +29,9 @@
     const regex = new RegExp("(" + words.join("|") + ")", "gi");
 
     const SKIP = new Set([
-      "SCRIPT",
-      "STYLE",
-      "NOSCRIPT",
-      "PRE",
-      "CODE",
-      "KBD",
-      "SAMP",
-      "TEXTAREA",
-      "INPUT",
-      "BUTTON",
-      "SELECT",
-      "OPTION",
-      "SVG",
-      "MARK"
+      "SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE",
+      "KBD", "SAMP", "TEXTAREA", "INPUT", "BUTTON",
+      "SELECT", "OPTION", "SVG", "MARK"
     ]);
 
     const walker = document.createTreeWalker(
@@ -51,134 +39,84 @@
       NodeFilter.SHOW_TEXT,
       {
         acceptNode(node) {
-
-          if (!node.nodeValue.trim()) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
+          if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
           const parent = node.parentElement;
-
-          if (!parent) {
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+          if (parent.closest(".toc,.sidebar,.search,.mermaid,.highlight,.rouge-table")) {
             return NodeFilter.FILTER_REJECT;
           }
-
-          if (SKIP.has(parent.tagName)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
-          if (
-            parent.closest(
-              ".toc,.sidebar,.search,.mermaid,.highlight,.rouge-table"
-            )
-          ) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
           return NodeFilter.FILTER_ACCEPT;
         }
       }
     );
 
     const textNodes = [];
-
     while (walker.nextNode()) {
       textNodes.push(walker.currentNode);
     }
 
-    let firstHighlight = null;
-
     textNodes.forEach(node => {
-
       const text = node.nodeValue;
-
       regex.lastIndex = 0;
 
-      if (!regex.test(text)) {
-        return;
-      }
+      if (!regex.test(text)) return;
 
       regex.lastIndex = 0;
-
       const fragment = document.createDocumentFragment();
-
       let lastIndex = 0;
 
       text.replace(regex, (match, _, offset) => {
-
         if (offset > lastIndex) {
-          fragment.appendChild(
-            document.createTextNode(
-              text.slice(lastIndex, offset)
-            )
-          );
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
         }
 
         const mark = document.createElement("mark");
-                mark.className = "search-highlight";
+        mark.className = "search-highlight";
         mark.textContent = match;
 
-        if (!firstHighlight) {
-          firstHighlight = mark;
-        }
-
         fragment.appendChild(mark);
-
         lastIndex = offset + match.length;
-
         return match;
       });
 
       if (lastIndex < text.length) {
-        fragment.appendChild(
-          document.createTextNode(
-            text.slice(lastIndex)
-          )
-        );
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
       }
 
-      node.parentNode.replaceChild(
-        fragment,
-        node
-      );
-
+      // Replaces the text node safely inside the DOM
+      node.parentNode.replaceChild(fragment, node);
     });
 
-    window.addEventListener("load", () => {
+    // We delay the scroll by 150ms to ensure Chirpy's AnchorJS & Tocbot have finished rendering
+    setTimeout(() => {
+      
+      // We grab a fresh, live reference from the DOM to bypass detached nodes
+      const liveHighlight = document.querySelector(".search-highlight");
+      
+      if (liveHighlight) {
+        const target = liveHighlight.closest("h1,h2,h3,h4,h5,h6") || liveHighlight;
+        const HEADER_OFFSET = 90;
+        
+        // Calculate the top position dynamically based on current page state
+        const top = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
 
-        if (firstHighlight) {
+        window.scrollTo({
+          top,
+          behavior: "smooth"
+        });
+      }
 
-          const target =
-            firstHighlight.closest(
-              "h1,h2,h3,h4,h5,h6"
-            ) || firstHighlight;
+      // Clean up the URL after scrolling
+      params.delete("highlight");
+      const newQuery = params.toString();
+      history.replaceState(
+        {},
+        "",
+        location.pathname + (newQuery ? "?" + newQuery : "")
+      );
 
-          const HEADER_OFFSET = 90;
-
-          const top =
-            target.getBoundingClientRect().top +
-            window.scrollY -
-            HEADER_OFFSET;
-
-          window.scrollTo({
-            top,
-            behavior: "smooth"
-          });
-
-        }
-
-        params.delete("highlight");
-
-        const newQuery = params.toString();
-
-        history.replaceState(
-          {},
-          "",
-          location.pathname +
-          (newQuery ? "?" + newQuery : "")
-        );
-
-      });
+    }, 150);
 
   });
-
 })();
