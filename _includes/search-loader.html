@@ -1,10 +1,3 @@
-<!--
-  Jekyll Simple Search loader
-  See: <https://github.com/christian-fei/Simple-Jekyll-Search>
-
-  functionality to extract and highlight matched snippets in search results added <https://github.com/ohmlaws/ohmlaws.github.io> 
--->
-
    {% capture result_elem %}
   <article class="px-1 px-sm-2 px-lg-4 px-xl-0">
     <header>
@@ -18,94 +11,121 @@
 {% capture not_found %}<p class="mt-5">{{ site.data.locales[include.lang].search.no_results }}</p>{% endcapture %}
 
 <script>
-  function escapeRegExp(s) {
-    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildRegex(query) {
+  const words = query
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(escapeRegExp);
+
+  if (!words.length) return null;
+
+  return new RegExp("(" + words.join("|") + ")", "gi");
+}
+
+function createSnippet(content, regex) {
+  if (!content) return "";
+
+  regex.lastIndex = 0;
+  const match = regex.exec(content);
+
+  if (!match) {
+    return content.length > 180
+      ? content.substring(0, 180) + "..."
+      : content;
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
+  let start = Math.max(0, match.index - 100);
+  let end = Math.min(content.length, match.index + match[0].length + 100);
 
-    if (!searchInput || !searchResults) return;
+  if (start > 0) {
+    const s = content.indexOf(" ", start);
+    if (s !== -1) start = s + 1;
+  }
 
-    SimpleJekyllSearch({
-      searchInput: searchInput,
-      resultsContainer: searchResults,
-      json: '{{ "/assets/js/data/search.json" | relative_url }}',
-      searchResultTemplate: '{{ result_elem | strip_newlines }}',
-      noResultsText: '{{ not_found }}',
-      templateMiddleware: function(prop, value) {
-        
-        // Safety check: Skip empty data
-        if (!value) return value; 
-        
-        const term = searchInput.value.trim();
+  if (end < content.length) {
+    const e = content.lastIndexOf(" ", end);
+    if (e !== -1) end = e;
+  }
 
-        if (prop === 'categories') {
-          return `<div class="me-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`;
-        }
-        
-        if (prop === 'tags') {
-          return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`;
-        }
+  let snippet = content.substring(start, end);
 
-        if (prop === 'url') {
-          // Add standard search term as a fallback to the URL
-          if (term) return `${value}#:~:text=${encodeURIComponent(term)}`;
+  if (start > 0) snippet = "..." + snippet;
+  if (end < content.length) snippet += "...";
+
+  regex.lastIndex = 0;
+
+  return snippet.replace(
+    regex,
+    '<mark class="search-highlight">$1</mark>'
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  SimpleJekyllSearch({
+
+    searchInput: document.getElementById("search-input"),
+
+    resultsContainer: document.getElementById("search-results"),
+
+    json: "{{ '/assets/js/data/search.json' | relative_url }}",
+
+    searchResultTemplate: "{{ result_elem | strip_newlines }}",
+
+    noResultsText: "{{ not_found }}",
+
+    templateMiddleware(prop, value) {
+
+      const query = document
+        .getElementById("search-input")
+        .value
+        .trim();
+
+      const regex = buildRegex(query);
+
+      switch (prop) {
+
+        case "categories":
+          return value
+            ? `<div class="me-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`
+            : "";
+
+        case "tags":
+          return value
+            ? `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`
+            : "";
+
+        case "content":
+
+          if (!regex)
+            return value.length > 180
+              ? value.substring(0, 180) + "..."
+              : value;
+
+          return createSnippet(value, regex);
+
+        case "url":
+
+          if (!query)
+            return value;
+
+          return value +
+            (value.includes("?") ? "&" : "?") +
+            "highlight=" +
+            encodeURIComponent(query);
+
+        default:
           return value;
-        }
-        
-        if (prop === 'content') {
-          if (term) {
-            // Regex matches the typed word PLUS any trailing letters (e.g. "find" -> "finding")
-            const regex = new RegExp('(' + escapeRegExp(term) + '\\S*)', 'gi');
-            const match = regex.exec(value);
-            
-            if (match) {
-              let start = Math.max(0, match.index - 100);
-              let end = Math.min(value.length, match.index + match[0].length + 100);
-              
-              const spaceBefore = value.indexOf(' ', start);
-              const spaceAfter = value.lastIndexOf(' ', end);
-              
-              if (spaceBefore !== -1 && spaceBefore < match.index) start = spaceBefore + 1;
-              if (spaceAfter !== -1 && spaceAfter > match.index) end = spaceAfter;
-              
-              let snippet = value.substring(start, end);
-              
-              if (start > 0) snippet = '...' + snippet;
-              if (end < value.length) snippet += '...';
-              
-              return snippet.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
-            }
-          }
-          return value.length > 150 ? value.substring(0, 150) + '...' : value;
-        }
-
-        // VITAL FIX: Returns original value for everything else (Title, Date, etc.)
-        // This prevents the search results from going blank.
-        return value; 
       }
-    });
 
-    // Intercept clicks to rewrite the URL with the EXACT partially matched word
-    searchResults.addEventListener('click', function(e) {
-      const link = e.target.closest('a');
-      if (link) {
-        const article = link.closest('article');
-        if (article) {
-          const mark = article.querySelector('mark');
-          if (mark) {
-            // Grabs the exact highlighted word (e.g., "finding") from the snippet
-            const matchedText = mark.textContent.trim();
-            const baseUrl = link.href.split('#')[0];
-            // Updates the URL right before the browser navigates to the page
-            link.href = baseUrl + '#:~:text=' + encodeURIComponent(matchedText);
-          }
-        }
-      }
-    });
-    
+    }
+
   });
-</script>
-           
+
+});
+      </script>
