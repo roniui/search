@@ -143,9 +143,7 @@
 
     });
 
-    requestAnimationFrame(() => {
-
-      requestAnimationFrame(() => {
+    window.addEventListener("load", () => {
 
         if (firstHighlight) {
 
@@ -180,8 +178,6 @@
         );
 
       });
-
-    });
 
   });
 
