@@ -5,7 +5,7 @@
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("load", () => {
 
     const params = new URLSearchParams(window.location.search);
     const query = params.get("highlight");
