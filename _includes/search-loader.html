@@ -11,121 +11,117 @@
 {% capture not_found %}<p class="mt-5">{{ site.data.locales[include.lang].search.no_results }}</p>{% endcapture %}
 
 <script>
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+  {% comment %} Note: dependent library will be loaded in `js-selector.html` {% endcomment %}
 
-function buildRegex(query) {
-  const words = query
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(escapeRegExp);
-
-  if (!words.length) return null;
-
-  return new RegExp("(" + words.join("|") + ")", "gi");
-}
-
-function createSnippet(content, regex) {
-  if (!content) return "";
-
-  regex.lastIndex = 0;
-  const match = regex.exec(content);
-
-  if (!match) {
-    return content.length > 180
-      ? content.substring(0, 180) + "..."
-      : content;
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  let start = Math.max(0, match.index - 100);
-  let end = Math.min(content.length, match.index + match[0].length + 100);
+  function buildRegex(query) {
+    const words = query
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(escapeRegExp);
 
-  if (start > 0) {
-    const s = content.indexOf(" ", start);
-    if (s !== -1) start = s + 1;
+    return words.length
+      ? new RegExp('(' + words.join('|') + ')', 'gi')
+      : null;
   }
 
-  if (end < content.length) {
-    const e = content.lastIndexOf(" ", end);
-    if (e !== -1) end = e;
-  }
+  function createSnippet(content, regex) {
 
-  let snippet = content.substring(start, end);
-
-  if (start > 0) snippet = "..." + snippet;
-  if (end < content.length) snippet += "...";
-
-  regex.lastIndex = 0;
-
-  return snippet.replace(
-    regex,
-    '<mark class="search-highlight">$1</mark>'
-  );
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  SimpleJekyllSearch({
-
-    searchInput: document.getElementById("search-input"),
-
-    resultsContainer: document.getElementById("search-results"),
-
-    json: "{{ '/assets/js/data/search.json' | relative_url }}",
-
-    searchResultTemplate: "{{ result_elem | strip_newlines }}",
-
-    noResultsText: "{{ not_found }}",
-
-    templateMiddleware(prop, value) {
-
-      const query = document
-        .getElementById("search-input")
-        .value
-        .trim();
-
-      const regex = buildRegex(query);
-
-      switch (prop) {
-
-        case "categories":
-          return value
-            ? `<div class="me-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`
-            : "";
-
-        case "tags":
-          return value
-            ? `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`
-            : "";
-
-        case "content":
-
-          if (!regex)
-            return value.length > 180
-              ? value.substring(0, 180) + "..."
-              : value;
-
-          return createSnippet(value, regex);
-
-        case "url":
-
-          if (!query)
-            return value;
-
-          return value +
-            (value.includes("?") ? "&" : "?") +
-            "highlight=" +
-            encodeURIComponent(query);
-
-        default:
-          return value;
-      }
-
+    if (!regex || !content) {
+      return content.length > 180
+        ? content.substring(0, 180) + '...'
+        : content;
     }
 
-  });
+    regex.lastIndex = 0;
+    const match = regex.exec(content);
 
-});
-      </script>
+    if (!match) {
+      return content.length > 180
+        ? content.substring(0, 180) + '...'
+        : content;
+    }
+
+    let start = Math.max(0, match.index - 100);
+    let end = Math.min(content.length, match.index + match[0].length + 100);
+
+    if (start > 0) {
+      const s = content.indexOf(' ', start);
+      if (s !== -1) start = s + 1;
+    }
+
+    if (end < content.length) {
+      const e = content.lastIndexOf(' ', end);
+      if (e !== -1) end = e;
+    }
+
+    let snippet = content.substring(start, end);
+
+    if (start > 0) snippet = '...' + snippet;
+    if (end < content.length) snippet += '...';
+
+    regex.lastIndex = 0;
+
+    return snippet.replace(
+      regex,
+      '<mark class="search-highlight">$1</mark>'
+    );
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+
+    SimpleJekyllSearch({
+
+      searchInput: document.getElementById('search-input'),
+
+      resultsContainer: document.getElementById('search-results'),
+
+      json: '{{ "/assets/js/data/search.json" | relative_url }}',
+
+      searchResultTemplate: {{ result_elem | strip_newlines | jsonify }},
+
+      noResultsText: {{ not_found | jsonify }},
+
+      templateMiddleware: function(prop, value) {
+
+        const query = document.getElementById('search-input').value.trim();
+
+        const regex = buildRegex(query);
+
+        if (prop === 'categories') {
+          return value
+            ? `<div class="me-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`
+            : '';
+        }
+
+        if (prop === 'tags') {
+          return value
+            ? `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`
+            : '';
+        }
+
+        if (prop === 'content') {
+          return createSnippet(value, regex);
+        }
+
+        if (prop === 'url') {
+          if (!query) return value;
+
+          return value +
+            (value.includes('?') ? '&' : '?') +
+            'highlight=' +
+            encodeURIComponent(query);
+        }
+
+        return value;
+
+      }
+
+    });
+
+  });
+    </script>
