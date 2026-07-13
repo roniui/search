@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
 
     const params = new URLSearchParams(window.location.search);
@@ -19,9 +23,7 @@
       .trim()
       .split(/\s+/)
       .filter(Boolean)
-      .map(word =>
-        word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      );
+      .map(escapeRegExp);
 
     if (!words.length) return;
 
@@ -44,24 +46,25 @@
       "MARK"
     ]);
 
-    let firstHighlight = null;
-
     const walker = document.createTreeWalker(
       article,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode(node) {
 
-          if (!node.nodeValue.trim())
+          if (!node.nodeValue.trim()) {
             return NodeFilter.FILTER_REJECT;
+          }
 
-          const parent = node.parentNode;
+          const parent = node.parentElement;
 
-          if (!parent)
+          if (!parent) {
             return NodeFilter.FILTER_REJECT;
+          }
 
-          if (SKIP.has(parent.nodeName))
+          if (SKIP.has(parent.tagName)) {
             return NodeFilter.FILTER_REJECT;
+          }
 
           if (
             parent.closest(
@@ -76,20 +79,23 @@
       }
     );
 
-    const nodes = [];
+    const textNodes = [];
 
     while (walker.nextNode()) {
-      nodes.push(walker.currentNode);
+      textNodes.push(walker.currentNode);
     }
 
-    nodes.forEach(textNode => {
+    let firstHighlight = null;
 
-      const text = textNode.nodeValue;
+    textNodes.forEach(node => {
+
+      const text = node.nodeValue;
 
       regex.lastIndex = 0;
 
-      if (!regex.test(text))
+      if (!regex.test(text)) {
         return;
+      }
 
       regex.lastIndex = 0;
 
@@ -97,7 +103,7 @@
 
       let lastIndex = 0;
 
-      text.replace(regex, (match, p1, offset) => {
+      text.replace(regex, (match, _, offset) => {
 
         if (offset > lastIndex) {
           fragment.appendChild(
@@ -108,18 +114,18 @@
         }
 
         const mark = document.createElement("mark");
-
-        mark.className = "search-highlight";
-
+                mark.className = "search-highlight";
         mark.textContent = match;
 
-        if (!firstHighlight)
+        if (!firstHighlight) {
           firstHighlight = mark;
+        }
 
         fragment.appendChild(mark);
 
         lastIndex = offset + match.length;
 
+        return match;
       });
 
       if (lastIndex < text.length) {
@@ -130,43 +136,52 @@
         );
       }
 
-      textNode.parentNode.replaceChild(
+      node.parentNode.replaceChild(
         fragment,
-        textNode
+        node
       );
 
     });
 
-    if (firstHighlight) {
+    requestAnimationFrame(() => {
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
 
-        const heading = firstHighlight.closest("h1,h2,h3,h4,h5,h6");
+        if (firstHighlight) {
 
-if (heading && heading.id) {
-  location.hash = heading.id;
-} else {
-  firstHighlight.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-      }
+          const target =
+            firstHighlight.closest(
+              "h1,h2,h3,h4,h5,h6"
+            ) || firstHighlight;
 
-      }, 1500);
+          const HEADER_OFFSET = 90;
 
-    }
+          const top =
+            target.getBoundingClientRect().top +
+            window.scrollY -
+            HEADER_OFFSET;
 
-    params.delete("highlight");
+          window.scrollTo({
+            top,
+            behavior: "smooth"
+          });
 
-    const newQuery = params.toString();
+        }
 
-    history.replaceState(
-      {},
-      "",
-      location.pathname +
-      (newQuery ? "?" + newQuery : "") +
-      location.hash
-    );
+        params.delete("highlight");
+
+        const newQuery = params.toString();
+
+        history.replaceState(
+          {},
+          "",
+          location.pathname +
+          (newQuery ? "?" + newQuery : "")
+        );
+
+      });
+
+    });
 
   });
 
