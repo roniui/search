@@ -14,9 +14,12 @@
     <p>{content}</p>
   </article>
 {% endcapture %}
+
 {% capture not_found %}<p class="mt-5">{{ site.data.locales[include.lang].search.no_results }}</p>{% endcapture %}
+
 <script>
-  function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function escapeRegExp(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  
   document.addEventListener('DOMContentLoaded', () => {
     SimpleJekyllSearch({
       searchInput: document.getElementById('search-input'),
@@ -26,26 +29,55 @@
       noResultsText: '{{ not_found }}',
       templateMiddleware: function(prop, value) {
         const term = document.getElementById('search-input').value.trim();
+        
         if (prop === 'categories') return value ? `<div class="me-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>` : value;
         if (prop === 'tags') return value ? `<div><i class="fa fa-tag fa-fw"></i>${value}</div>` : value;
+        
         if (prop === 'content') {
           if (term && value) {
-            const regex = new RegExp(`(${escapeRegExp(term)})`, 'gi');
+            // Split terms to allow the final word to be a partial match (e.g. "find" matches "finding")
+            const terms = term.split(/\s+/);
+            const lastTerm = terms.pop();
+            const prefix = terms.length > 0 ? terms.map(escapeRegExp).join('\\s+') + '\\s+' : '';
+            
+            // Regex captures the phrase + any letters attached to the end of the last word
+            const regex = new RegExp(prefix + '[^\\s.,!?;:"\'()]*' + escapeRegExp(lastTerm) + '[^\\s.,!?;:"\'()]*', 'gi');
             const match = regex.exec(value);
+            
             if (match) {
               let start = Math.max(0, match.index - 100);
               let end = Math.min(value.length, match.index + match[0].length + 100);
+              
               if (start > 0) start = value.indexOf(' ', start) + 1 || start;
               if (end < value.length) end = value.lastIndexOf(' ', end) || end;
+              
               let snippet = value.substring(start, end);
               if (start > 0) snippet = '...' + snippet;
               if (end < value.length) snippet += '...';
-              return snippet.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
+              
+              // $& injects the exact word(s) found in the text (e.g. "to finding")
+              return snippet.replace(regex, '<mark class="bg-warning text-dark">$&</mark>');
             }
           }
           return value.length > 150 ? value.substring(0, 150) + '...' : value;
         }
-        if (prop === 'url') return term ? `${value}#:~:text=${encodeURIComponent(term)}` : value;
+      }
+    });
+
+    // NEW: Intercept clicks to grab the exact highlighted word and feed it to the browser link
+    document.getElementById('search-results').addEventListener('click', function(e) {
+      const link = e.target.closest('a');
+      if (link) {
+        const article = link.closest('article');
+        if (article) {
+          const mark = article.querySelector('mark');
+          if (mark) {
+            // Grab the exact text that was highlighted (e.g., "to finding")
+            const matchedText = mark.textContent.trim().replace(/\s+/g, ' ');
+            // Append it to the URL so the browser can successfully scroll to it
+            link.href = link.href.split('#')[0] + '#:~:text=' + encodeURIComponent(matchedText);
+          }
+        }
       }
     });
   });
