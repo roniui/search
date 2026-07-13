@@ -141,14 +141,16 @@
 
       setTimeout(() => {
 
-        const target =
-  firstHighlight.closest("h1,h2,h3,h4,h5,h6") ||
-  firstHighlight;
+        const heading = firstHighlight.closest("h1,h2,h3,h4,h5,h6");
 
-target.scrollIntoView({
-  behavior: "smooth",
-  block: "start"
-});
+if (heading && heading.id) {
+  location.hash = heading.id;
+} else {
+  firstHighlight.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+      }
 
       }, 150);
 
