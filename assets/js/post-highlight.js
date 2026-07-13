@@ -88,22 +88,18 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    // We delay the scroll by 150ms to ensure Chirpy's AnchorJS & Tocbot have finished rendering
+        // We delay the scroll by 300ms to ensure Chirpy's layout has completely settled
     setTimeout(() => {
       
-      // We grab a fresh, live reference from the DOM to bypass detached nodes
+      // Grab a fresh, live reference from the DOM
       const liveHighlight = document.querySelector(".search-highlight");
       
       if (liveHighlight) {
-        const target = liveHighlight.closest("h1,h2,h3,h4,h5,h6") || liveHighlight;
-        const HEADER_OFFSET = 90;
-        
-        // Calculate the top position dynamically based on current page state
-        const top = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-
-        window.scrollTo({
-          top,
-          behavior: "smooth"
+        // Force the browser to scroll this element to the dead center of the screen.
+        // This avoids any math conflicts with sticky headers or changing image sizes.
+        liveHighlight.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
         });
       }
 
@@ -116,7 +112,7 @@
         location.pathname + (newQuery ? "?" + newQuery : "")
       );
 
-    }, 150);
+    }, 300);
 
   });
 })();
