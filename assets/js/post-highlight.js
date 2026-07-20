@@ -88,29 +88,23 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-        // We delay the scroll by 300ms to ensure Chirpy's layout has completely settled
+    // We delay the scroll slightly so Chirpy has time to render its heading anchors
     setTimeout(() => {
-      
-      // Grab a fresh, live reference from the DOM
       const liveHighlight = document.querySelector(".search-highlight");
       
       if (liveHighlight) {
-        // Force the browser to scroll this element to the dead center of the screen.
-        // This avoids any math conflicts with sticky headers or changing image sizes.
-        liveHighlight.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
+        // Calculate exact position, leaving a 100px gap for Chirpy's top navbar
+        const headerOffset = 100; 
+        const elementPosition = liveHighlight.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
         });
       }
-
-      // Clean up the URL after scrolling
-      params.delete("highlight");
-      const newQuery = params.toString();
-      history.replaceState(
-        {},
-        "",
-        location.pathname + (newQuery ? "?" + newQuery : "")
-      );
+      
+      // URL cleanup has been removed to prevent conflicts with Chirpy's heading router.
 
     }, 300);
 
