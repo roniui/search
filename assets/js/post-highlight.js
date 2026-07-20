@@ -88,6 +88,7 @@
     });
 
     // Let the DOM settle, then scroll based on the element type
+    // Increased to 500ms just to ensure Chirpy has finished setting up the page layout
     setTimeout(() => {
       const firstMark = document.querySelector(".search-highlight");
       
@@ -96,20 +97,24 @@
       const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
 
       if (parentHeading && parentHeading.id) {
-        // 1. It's inside a heading! We assign the hash directly.
-        // This acts identically to your successful test with "?highlight=Para#paragraph"
-        window.location.hash = parentHeading.id;
+        // 1. Explicitly force the URL hash with the "#" symbol included
+        window.location.hash = "#" + parentHeading.id;
+        
+        // 2. Force the scroll! Even if the hash fails to trigger navigation, 
+        // this guarantees the browser physically scrolls the heading into view.
+        parentHeading.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
       } else {
-        // 2. It's inside normal text. We use standard smooth scrolling.
+        // 3. It's inside normal text. We use standard smooth scrolling.
         firstMark.scrollIntoView({
           behavior: "smooth",
           block: "center"
         });
       }
 
-      // NOTE: URL cleanup remains completely removed so we don't interrupt the scroll!
-
-    }, 300);
+    }, 500);
 
   }); 
 })(); 
