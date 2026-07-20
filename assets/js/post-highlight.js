@@ -9,14 +9,20 @@
     const params = new URLSearchParams(window.location.search);
     const query = params.get("highlight");
 
-    if (!query) return;
+    if (!query) {
+      console.log("No highlight query found in URL.");
+      return;
+    }
 
     const article =
       document.querySelector("article") ||
       document.querySelector(".post-content") ||
       document.querySelector(".content");
 
-    if (!article) return;
+    if (!article) {
+      console.log("Could not find article content area.");
+      return;
+    }
 
     const words = query
       .trim()
@@ -56,6 +62,8 @@
       textNodes.push(walker.currentNode);
     }
 
+    let matchCount = 0;
+
     textNodes.forEach(node => {
       const text = node.nodeValue;
       regex.lastIndex = 0;
@@ -77,6 +85,7 @@
         
         fragment.appendChild(mark);
         lastIndex = offset + match.length;
+        matchCount++;
         return match;
       });
 
@@ -87,34 +96,24 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    // Let the DOM settle, then scroll based on the element type
-    // Increased to 500ms just to ensure Chirpy has finished setting up the page layout
+    console.log(`Highlighted ${matchCount} matches.`);
+
+    // Give the browser half a second to render the marks, then scroll
     setTimeout(() => {
       const firstMark = document.querySelector(".search-highlight");
       
-      if (!firstMark) return;
-
-      const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
-
-      if (parentHeading && parentHeading.id) {
-        // 1. Explicitly force the URL hash with the "#" symbol included
-        window.location.hash = "#" + parentHeading.id;
-        
-        // 2. Force the scroll! Even if the hash fails to trigger navigation, 
-        // this guarantees the browser physically scrolls the heading into view.
-        parentHeading.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      } else {
-        // 3. It's inside normal text. We use standard smooth scrolling.
+      if (firstMark) {
+        console.log("Scrolling to first match...");
+        // This works universally for headings and paragraphs!
         firstMark.scrollIntoView({
           behavior: "smooth",
           block: "center"
         });
+      } else {
+        console.log("No highlight mark found in DOM to scroll to.");
       }
 
     }, 500);
 
   }); 
-})(); 
+})();
