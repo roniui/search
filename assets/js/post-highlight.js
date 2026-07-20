@@ -87,7 +87,7 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    // Let the DOM settle, then scroll based on the element type
+        // Let the DOM settle, then scroll based on the element type
     setTimeout(() => {
       const firstMark = document.querySelector(".search-highlight");
       
@@ -95,12 +95,20 @@
 
       const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
 
-      if (parentHeading && parentHeading.id) {
-        // 1. It's inside a heading! We grab the REAL ID Jekyll made (e.g., id="paragraph")
-        // Setting the hash forces Chirpy/the browser to scroll natively.
-        window.location.hash = parentHeading.id;
+      if (parentHeading) {
+        // 1. Look for Chirpy's generated anchor link inside the heading
+        const anchorLink = parentHeading.querySelector("a.anchor");
+        
+        if (anchorLink) {
+          // Simulate a mouse click on Chirpy's native link!
+          // This triggers the theme's built-in smooth scroll perfectly.
+          anchorLink.click();
+        } else if (parentHeading.id) {
+          // Fallback just in case the link hasn't generated yet
+          window.location.hash = parentHeading.id;
+        }
       } else {
-        // 2. It's inside normal text. We use the method you confirmed already works.
+        // 2. It's inside normal text. We use standard smooth scrolling.
         firstMark.scrollIntoView({
           behavior: "smooth",
           block: "center"
@@ -115,6 +123,3 @@
       history.replaceState({}, "", newUrl);
 
     }, 300);
-
-  });
-})();
