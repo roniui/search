@@ -11,90 +11,89 @@
 
     if (!query) return;
 
-    const article =
-      document.querySelector("article") ||
-      document.querySelector(".post-content") ||
-      document.querySelector(".content");
+    // WAIT for Chirpy's AnchorJS and layout scripts to completely finish rewriting headings
+    setTimeout(() => {
+      const article =
+        document.querySelector("article") ||
+        document.querySelector(".post-content") ||
+        document.querySelector(".content");
 
-    if (!article) return;
+      if (!article) return;
 
-    const words = query
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map(escapeRegExp);
+      const words = query
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(escapeRegExp);
 
-    if (!words.length) return;
+      if (!words.length) return;
 
-    const regex = new RegExp("(" + words.join("|") + ")", "gi");
+      const regex = new RegExp("(" + words.join("|") + ")", "gi");
 
-    const SKIP = new Set([
-      "SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE",
-      "KBD", "SAMP", "TEXTAREA", "INPUT", "BUTTON",
-      "SELECT", "OPTION", "SVG", "MARK"
-    ]);
+      const SKIP = new Set([
+        "SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE",
+        "KBD", "SAMP", "TEXTAREA", "INPUT", "BUTTON",
+        "SELECT", "OPTION", "SVG", "MARK"
+      ]);
 
-    const walker = document.createTreeWalker(
-      article,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode(node) {
-          if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-          const parent = node.parentElement;
-          if (!parent) return NodeFilter.FILTER_REJECT;
-          if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-          if (parent.closest(".toc,.sidebar,.search,.mermaid,.highlight,.rouge-table")) {
-            return NodeFilter.FILTER_REJECT;
+      const walker = document.createTreeWalker(
+        article,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode(node) {
+            if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+            if (parent.closest(".toc,.sidebar,.search,.mermaid,.highlight,.rouge-table")) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return NodeFilter.FILTER_ACCEPT;
           }
-          return NodeFilter.FILTER_ACCEPT;
         }
+      );
+
+      const textNodes = [];
+      while (walker.nextNode()) {
+        textNodes.push(walker.currentNode);
       }
-    );
 
-    const textNodes = [];
-    while (walker.nextNode()) {
-      textNodes.push(walker.currentNode);
-    }
+      textNodes.forEach(node => {
+        const text = node.nodeValue;
+        regex.lastIndex = 0;
 
-    textNodes.forEach(node => {
-      const text = node.nodeValue;
-      regex.lastIndex = 0;
+        if (!regex.test(text)) return;
 
-      if (!regex.test(text)) return;
+        regex.lastIndex = 0;
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
 
-      regex.lastIndex = 0;
-      const fragment = document.createDocumentFragment();
-      let lastIndex = 0;
+        text.replace(regex, (match, _, offset) => {
+          if (offset > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+          }
 
-      text.replace(regex, (match, _, offset) => {
-        if (offset > lastIndex) {
-          fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+          const mark = document.createElement("mark");
+          mark.className = "search-highlight";
+          mark.textContent = match;
+
+          fragment.appendChild(mark);
+          lastIndex = offset + match.length;
+          return match;
+        });
+
+        if (lastIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
         }
 
-        const mark = document.createElement("mark");
-        mark.className = "search-highlight";
-        mark.textContent = match;
-
-        fragment.appendChild(mark);
-        lastIndex = offset + match.length;
-        return match;
+        node.parentNode.replaceChild(fragment, node);
       });
 
-      if (lastIndex < text.length) {
-        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-      }
-
-      // Replaces the text node safely inside the DOM
-      node.parentNode.replaceChild(fragment, node);
-    });
-
-    // We delay the scroll slightly so Chirpy has time to render its heading anchors
-    setTimeout(() => {
+      // Now that we know our <mark> elements are safe from being overwritten, we scroll
       const liveHighlight = document.querySelector(".search-highlight");
       
       if (liveHighlight) {
-        // Calculate exact position, leaving a 100px gap for Chirpy's top navbar
-        const headerOffset = 100; 
+        const headerOffset = 100; // Account for Chirpy's fixed top navbar
         const elementPosition = liveHighlight.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
@@ -103,10 +102,8 @@
           behavior: "smooth"
         });
       }
-      
-      // URL cleanup has been removed to prevent conflicts with Chirpy's heading router.
 
-    }, 300);
+    }, 500); // 500ms delay to let Chirpy's DOM manipulation finish first
 
   });
 })();
