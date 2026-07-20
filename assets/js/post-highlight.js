@@ -98,22 +98,31 @@
 
     console.log(`Highlighted ${matchCount} matches.`);
 
-    // Give the browser half a second to render the marks, then scroll
+    // Give the browser half a second to render, then scroll
     setTimeout(() => {
       const firstMark = document.querySelector(".search-highlight");
       
-      if (firstMark) {
-        console.log("Scrolling to first match...");
-        // This works universally for headings and paragraphs!
-        firstMark.scrollIntoView({
+      if (!firstMark) {
+        console.log("No highlight mark found in DOM.");
+        return;
+      }
+
+      const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
+
+      if (parentHeading) {
+        console.log("Match is in a heading. Scrolling to the heading instead of the mark.");
+        // Scroll the heading itself to bypass Chirpy's internal AnchorJS conflicts
+        parentHeading.scrollIntoView({
           behavior: "smooth",
           block: "center"
         });
       } else {
-        console.log("No highlight mark found in DOM to scroll to.");
+        console.log("Match is in normal text. Scrolling to the mark.");
+        // Scroll the mark directly
+        firstMark.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
       }
 
-    }, 500);
-
-  }); 
-})();
+    }, 5000);
