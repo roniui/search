@@ -87,7 +87,7 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-        // Let the DOM settle, then scroll based on the element type
+    // Let the DOM settle, then scroll based on the element type
     setTimeout(() => {
       const firstMark = document.querySelector(".search-highlight");
       
@@ -101,7 +101,6 @@
         
         if (anchorLink) {
           // Simulate a mouse click on Chirpy's native link!
-          // This triggers the theme's built-in smooth scroll perfectly.
           anchorLink.click();
         } else if (parentHeading.id) {
           // Fallback just in case the link hasn't generated yet
@@ -115,11 +114,9 @@
         });
       }
 
-      // 3. Clean up the URL: removes ?highlight= but keeps the clean #hash
-      params.delete("highlight");
-      const newQuery = params.toString();
-      const newUrl = location.pathname + (newQuery ? "?" + newQuery : "") + location.hash;
-      
-      history.replaceState({}, "", newUrl);
+      // NOTE: URL cleanup completely removed to avoid conflicting with Chirpy's scrolling router.
 
     }, 300);
+
+  }); 
+})();
