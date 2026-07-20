@@ -9,20 +9,14 @@
     const params = new URLSearchParams(window.location.search);
     const query = params.get("highlight");
 
-    if (!query) {
-      console.log("No highlight query found in URL.");
-      return;
-    }
+    if (!query) return;
 
     const article =
       document.querySelector("article") ||
       document.querySelector(".post-content") ||
       document.querySelector(".content");
 
-    if (!article) {
-      console.log("Could not find article content area.");
-      return;
-    }
+    if (!article) return;
 
     const words = query
       .trim()
@@ -96,35 +90,84 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    console.log(`Highlighted ${matchCount} matches.`);
+    // --- FLOATING NAVIGATOR UI ---
+    if (matchCount > 0) {
+      // Re-query to get live elements just in case the theme modified them
+      const marks = document.querySelectorAll(".search-highlight");
+      let currentIndex = -1; 
 
-    // Give the browser half a second to render, then scroll
-    setTimeout(() => {
-      const firstMark = document.querySelector(".search-highlight");
+      const floatUI = document.createElement("div");
+      floatUI.id = "search-highlight-nav";
+      // Basic styling that adapts to dark/light mode using inherit
+      floatUI.style.cssText = `
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        background: var(--main-wrapper-bg, #ffffff);
+        color: var(--text-color, #333333);
+        border: 1px solid var(--border-color, #cccccc);
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: inherit;
+        font-size: 0.9rem;
+      `;
+
+      floatUI.innerHTML = `
+        <span><span id="highlight-current-index">0</span> / ${matchCount}</span>
+        <button id="btn-next-match" style="background: var(--link-color, #007bff); color: #fff; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">Next</button>
+        <button id="btn-clear-match" style="background: transparent; color: inherit; border: 1px solid var(--border-color, #ccc); padding: 5px 12px; border-radius: 5px; cursor: pointer;">Clear</button>
+      `;
       
-      if (!firstMark) {
-        console.log("No highlight mark found in DOM.");
-        return;
-      }
+      document.body.appendChild(floatUI);
 
-      const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
+      const indexLabel = document.getElementById("highlight-current-index");
+      const btnNext = document.getElementById("btn-next-match");
+      const btnClear = document.getElementById("btn-clear-match");
 
-      if (parentHeading) {
-        console.log("Match is in a heading. Scrolling to the heading instead of the mark.");
-        // Scroll the heading itself to bypass Chirpy's internal AnchorJS conflicts
-        parentHeading.scrollIntoView({
+      // Scroll Action
+      btnNext.addEventListener("click", () => {
+        // Increment index, loop back to start if at the end
+        currentIndex = (currentIndex + 1) % marks.length;
+        
+        // Update the counter text (1-based index for humans)
+        indexLabel.textContent = currentIndex + 1;
+
+        // Scroll to the current match
+        marks[currentIndex].scrollIntoView({
           behavior: "smooth",
           block: "center"
         });
-      } else {
-        console.log("Match is in normal text. Scrolling to the mark.");
-        // Scroll the mark directly
-        firstMark.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-      }
+      });
 
-    }, 5000);
-}); 
+      // Clear Action
+      btnClear.addEventListener("click", () => {
+        // Remove ?highlight from URL
+        const url = new URL(window.location);
+        url.searchParams.delete("highlight");
+        window.history.replaceState({}, "", url);
+
+        // Remove marks (unwrap them)
+        marks.forEach(mark => {
+          const parent = mark.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(mark.textContent), mark);
+            parent.normalize(); // Merges adjacent text nodes cleanly
+          }
+        });
+
+        // Destroy the UI
+        floatUI.remove();
+      });
+
+      // Optionally, trigger the first click automatically to scroll to the first match
+      // after a short delay (uncomment the line below if you want auto-scroll on load)
+      // setTimeout(() => btnNext.click(), 500); 
+    }
+
+  });
 })();
