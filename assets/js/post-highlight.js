@@ -56,9 +56,6 @@
       textNodes.push(walker.currentNode);
     }
 
-    // Variable to track the very first match
-    let isFirstMatch = true; 
-
     textNodes.forEach(node => {
       const text = node.nodeValue;
       regex.lastIndex = 0;
@@ -76,14 +73,8 @@
 
         const mark = document.createElement("mark");
         mark.className = "search-highlight";
-
-        // Give ONLY the first match a unique ID so we can navigate to it
-        if (isFirstMatch) {
-          mark.id = "search-highlight-target"; 
-          isFirstMatch = false;
-        }
-
         mark.textContent = match;
+        
         fragment.appendChild(mark);
         lastIndex = offset + match.length;
         return match;
@@ -96,33 +87,34 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    // Let the DOM settle, then use native URL hashes to trigger the scroll
+    // Let the DOM settle, then scroll based on the element type
     setTimeout(() => {
-      const targetMark = document.getElementById("search-highlight-target");
+      const firstMark = document.querySelector(".search-highlight");
+      
+      if (!firstMark) return;
 
-      if (targetMark) {
-        // Check if our highlight is inside a heading (h1-h6)
-        const parentHeading = targetMark.closest("h1, h2, h3, h4, h5, h6");
+      const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
 
-        if (parentHeading && parentHeading.id) {
-          // If it is in a heading, use the heading's ID (exactly like your example URL!)
-          window.location.hash = parentHeading.id;
-        } else {
-          // If it is in normal text, add a CSS offset so the top navbar doesn't cover it
-          targetMark.style.scrollMarginTop = "100px";
-          // Jump directly to our custom <mark> ID
-          window.location.hash = targetMark.id; 
-        }
+      if (parentHeading && parentHeading.id) {
+        // 1. It's inside a heading! We grab the REAL ID Jekyll made (e.g., id="paragraph")
+        // Setting the hash forces Chirpy/the browser to scroll natively.
+        window.location.hash = parentHeading.id;
+      } else {
+        // 2. It's inside normal text. We use the method you confirmed already works.
+        firstMark.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
       }
 
-      // We can safely clean up the URL here. This removes the ?highlight= parameter
-      // but keeps the #hash, resulting in a perfectly clean URL.
+      // 3. Clean up the URL: removes ?highlight= but keeps the clean #hash
       params.delete("highlight");
       const newQuery = params.toString();
       const newUrl = location.pathname + (newQuery ? "?" + newQuery : "") + location.hash;
+      
       history.replaceState({}, "", newUrl);
 
-    }, 150);
+    }, 300);
 
   });
 })();
