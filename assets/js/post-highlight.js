@@ -95,17 +95,10 @@
 
       const parentHeading = firstMark.closest("h1, h2, h3, h4, h5, h6");
 
-      if (parentHeading) {
-        // 1. Look for Chirpy's generated anchor link inside the heading
-        const anchorLink = parentHeading.querySelector("a.anchor");
-        
-        if (anchorLink) {
-          // Simulate a mouse click on Chirpy's native link!
-          anchorLink.click();
-        } else if (parentHeading.id) {
-          // Fallback just in case the link hasn't generated yet
-          window.location.hash = parentHeading.id;
-        }
+      if (parentHeading && parentHeading.id) {
+        // 1. It's inside a heading! We assign the hash directly.
+        // This acts identically to your successful test with "?highlight=Para#paragraph"
+        window.location.hash = parentHeading.id;
       } else {
         // 2. It's inside normal text. We use standard smooth scrolling.
         firstMark.scrollIntoView({
@@ -114,9 +107,9 @@
         });
       }
 
-      // NOTE: URL cleanup completely removed to avoid conflicting with Chirpy's scrolling router.
+      // NOTE: URL cleanup remains completely removed so we don't interrupt the scroll!
 
     }, 300);
 
   }); 
-})();
+})(); 
