@@ -43,9 +43,13 @@
           const parent = node.parentElement;
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-          if (parent.closest(".toc,.sidebar,.search,.mermaid,.highlight,.rouge-table")) {
+          
+          // ADDED: .anchor, .sr-only, .visually-hidden, and .d-none 
+          // This prevents highlighting invisible text and fixes the match count!
+          if (parent.closest(".toc, .sidebar, .search, .mermaid, .highlight, .rouge-table, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
             return NodeFilter.FILTER_REJECT;
           }
+          
           return NodeFilter.FILTER_ACCEPT;
         }
       }
@@ -92,13 +96,12 @@
 
     // --- FLOATING NAVIGATOR UI ---
     if (matchCount > 0) {
-      // Re-query to get live elements just in case the theme modified them
       const marks = document.querySelectorAll(".search-highlight");
       let currentIndex = -1; 
 
       const floatUI = document.createElement("div");
       floatUI.id = "search-highlight-nav";
-      // Basic styling that adapts to dark/light mode using inherit
+      
       floatUI.style.cssText = `
         position: fixed;
         bottom: 25px;
@@ -129,44 +132,36 @@
       const btnNext = document.getElementById("btn-next-match");
       const btnClear = document.getElementById("btn-clear-match");
 
-      // Scroll Action
+      // Auto-scroll to the first match immediately without clicking
+      setTimeout(() => {
+        btnNext.click();
+      }, 300);
+
       btnNext.addEventListener("click", () => {
-        // Increment index, loop back to start if at the end
         currentIndex = (currentIndex + 1) % marks.length;
-        
-        // Update the counter text (1-based index for humans)
         indexLabel.textContent = currentIndex + 1;
 
-        // Scroll to the current match
         marks[currentIndex].scrollIntoView({
           behavior: "smooth",
           block: "center"
         });
       });
 
-      // Clear Action
       btnClear.addEventListener("click", () => {
-        // Remove ?highlight from URL
         const url = new URL(window.location);
         url.searchParams.delete("highlight");
         window.history.replaceState({}, "", url);
 
-        // Remove marks (unwrap them)
         marks.forEach(mark => {
           const parent = mark.parentNode;
           if (parent) {
             parent.replaceChild(document.createTextNode(mark.textContent), mark);
-            parent.normalize(); // Merges adjacent text nodes cleanly
+            parent.normalize(); 
           }
         });
 
-        // Destroy the UI
         floatUI.remove();
       });
-
-      // Optionally, trigger the first click automatically to scroll to the first match
-      // after a short delay (uncomment the line below if you want auto-scroll on load)
-      // setTimeout(() => btnNext.click(), 500); 
     }
 
   });
