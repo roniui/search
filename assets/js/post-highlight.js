@@ -104,10 +104,10 @@
       
       floatUI.style.cssText = `
         position: fixed;
-        bottom: 25px;
+        bottom: 15px;
         right: 25px;
-        background: var(--main-wrapper-bg, #ffffff);
-        color: var(--text-color, #333333);
+        background: var(--main-bg);
+        color: var(--text-color);
         border: 1px solid var(--border-color, #cccccc);
         padding: 10px 15px;
         border-radius: 8px;
@@ -122,7 +122,7 @@
 
       floatUI.innerHTML = `
         <span><span id="highlight-current-index">0</span> / ${matchCount}</span>
-        <button id="btn-next-match" style="background: var(--link-color, #007bff); color: #fff; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">Next</button>
+        <button id="btn-next-match" style="background: #0550ae; color: #fff; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">Next</button>
         <button id="btn-clear-match" style="background: transparent; color: inherit; border: 1px solid var(--border-color, #ccc); padding: 5px 12px; border-radius: 5px; cursor: pointer;">Clear</button>
       `;
       
