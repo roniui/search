@@ -44,9 +44,9 @@
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
           
-          // ADDED: .anchor, .sr-only, .visually-hidden, and .d-none 
-          // This prevents highlighting invisible text and fixes the match count!
-          if (parent.closest(".toc, .sidebar, .search, .mermaid, .highlight, .rouge-table, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
+          // UPDATED: Added #toc, #toc-popup, .toc-list, #sidebar, and #panel-wrapper
+          // This stops the script from highlighting the Table of Contents or Sidebar!
+          if (parent.closest("#toc, #toc-popup, .toc-list, #sidebar, #panel-wrapper, .search, .mermaid, .highlight, .rouge-table, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
             return NodeFilter.FILTER_REJECT;
           }
           
