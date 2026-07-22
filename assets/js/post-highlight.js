@@ -96,10 +96,10 @@
       const navStyle = document.createElement("style");
       navStyle.innerHTML = `
         #search-highlight-nav {
-          transition: transform 0.25s ease-in-out;
+          transition: transform 0.4s ease;
         }
-        body.sidebar-display #search-highlight-nav {
-          transform: translateX(250px); 
+        [sidebar-display] #search-highlight-nav {
+          transform: translateX(260px); 
         }
       `;
       document.head.appendChild(navStyle);
