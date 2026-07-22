@@ -88,15 +88,25 @@
       node.parentNode.replaceChild(fragment, node);
     });
 
-    // --- FLOATING NAVIGATOR UI ---
+        // --- FLOATING NAVIGATOR UI ---
     if (matchCount > 0) {
       const marks = document.querySelectorAll(".search-highlight");
       let currentIndex = -1; 
 
-            const floatUI = document.createElement("div");
+      const navStyle = document.createElement("style");
+      navStyle.innerHTML = `
+        #search-highlight-nav {
+          transition: transform 0.25s ease-in-out;
+        }
+        body.sidebar-display #search-highlight-nav {
+          transform: translateX(250px); 
+        }
+      `;
+      document.head.appendChild(navStyle);
+
+      const floatUI = document.createElement("div");
       floatUI.id = "search-highlight-nav";
       
-      // FIXED: Lowered z-index to 90 so it goes behind the search overlay
       floatUI.style.cssText = `
         position: fixed;
         bottom: 25px;
