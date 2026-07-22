@@ -20,6 +20,7 @@
   function buildRegex(query) {
     const cleanQuery = query.trim();
     if (cleanQuery.length < 2) return null;
+
     const exactPhrase = escapeRegExp(cleanQuery).replace(/\s+/g, '\\s+');
     return new RegExp('(' + exactPhrase + ')', 'gi');
   }
@@ -31,6 +32,10 @@
         ? content.substring(0, 180) + '...'
         : content;
     }
+
+    // --- NEW: Count total matches in the post content ---
+    const allMatches = content.match(regex);
+    const totalMatches = allMatches ? allMatches.length : 0;
 
     regex.lastIndex = 0;
     const match = regex.exec(content);
@@ -60,11 +65,20 @@
     if (end < content.length) snippet += '...';
 
     regex.lastIndex = 0;
-
-    return snippet.replace(
+    
+    // Highlight the snippet
+    let finalSnippet = snippet.replace(
       regex,
       '<mark class="search-highlight">$1</mark>'
     );
+
+    // --- NEW: Add the "+X matches" badge if there are additional matches ---
+    if (totalMatches > 1) {
+      const extraMatches = totalMatches - 1;
+      finalSnippet += `<div style="text-align: right; color: var(--prompt-warning-icon-color); font-weight: 500; font-size: 0.95em; margin-top: 5px;">+${extraMatches} matches</div>`;
+    }
+
+    return finalSnippet;
   }
 
   document.addEventListener('DOMContentLoaded', () => {
