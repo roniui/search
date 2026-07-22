@@ -40,7 +40,7 @@
           const parent = node.parentElement;
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-          if (parent.closest("#toc, #toc-popup, #toc-bar, .toc-list, #sidebar, #panel-wrapper, .search, .mermaid, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
+          if (parent.closest("#toc, #toc-popup, #toc-bar, .toc-list, #sidebar, #panel-wrapper, .search, .mermaid, .anchor, .sr-only, .visually-hidden, .d-none, [hidden], header, .post-meta, .post-tags, .license-wrapper")) {
             return NodeFilter.FILTER_REJECT;
           }
           
