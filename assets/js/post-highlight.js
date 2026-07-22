@@ -93,9 +93,10 @@
       const marks = document.querySelectorAll(".search-highlight");
       let currentIndex = -1; 
 
-      const floatUI = document.createElement("div");
+            const floatUI = document.createElement("div");
       floatUI.id = "search-highlight-nav";
       
+      // FIXED: Lowered z-index to 90 so it goes behind the search overlay
       floatUI.style.cssText = `
         position: fixed;
         bottom: 25px;
@@ -106,7 +107,7 @@
         padding: 10px 15px;
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        z-index: 9999;
+        z-index: 90; 
         display: flex;
         align-items: center;
         gap: 12px;
@@ -125,6 +126,20 @@
       `;
       
       document.body.appendChild(floatUI);
+
+      // --- NEW: Automatically Hide Navigator during Search ---
+      const searchTrigger = document.getElementById("search-trigger"); // Mobile search icon
+      const searchInput = document.getElementById("search-input");     // Search input box
+      const searchCancel = document.getElementById("search-cancel");   // Cancel button
+
+      const hideNav = () => { floatUI.style.display = "none"; };
+      const showNav = () => { floatUI.style.display = "flex"; };
+
+      // Hide when search is opened or focused
+      if (searchTrigger) searchTrigger.addEventListener("click", hideNav);
+      if (searchInput) searchInput.addEventListener("focus", hideNav);
+      // Show again when the search is canceled
+      if (searchCancel) searchCancel.addEventListener("click", showNav);
 
       const indexLabel = document.getElementById("highlight-current-index");
       const btnPrev = document.getElementById("btn-prev-match");
