@@ -27,8 +27,7 @@
     const regex = new RegExp("(" + exactPhrase + ")", "gi");
 
     const SKIP = new Set([
-      "SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE",
-      "KBD", "SAMP", "TEXTAREA", "INPUT", "BUTTON",
+      "SCRIPT", "STYLE", "NOSCRIPT", "KBD", "SAMP", "TEXTAREA", "INPUT", "BUTTON",
       "SELECT", "OPTION", "SVG", "MARK"
     ]);
 
@@ -41,7 +40,7 @@
           const parent = node.parentElement;
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (SKIP.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-          if (parent.closest("#toc, #toc-popup, #toc-bar, .toc-list, #sidebar, #panel-wrapper, .search, .mermaid, .highlight, .rouge-table, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
+          if (parent.closest("#toc, #toc-popup, #toc-bar, .toc-list, #sidebar, #panel-wrapper, .search, .mermaid, .anchor, .sr-only, .visually-hidden, .d-none, [hidden]")) {
             return NodeFilter.FILTER_REJECT;
           }
           
